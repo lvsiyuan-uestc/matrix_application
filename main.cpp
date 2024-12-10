@@ -7,6 +7,8 @@
 #include <stdlib.h> // 用于 srand, rand
 #include <time.h>   
 #define MAX_SIZE 100  // 最大迷宫尺寸
+// 定义宝藏的数量
+#define TREASURE_COUNT 5  // 可以修改成希望的宝藏数目
 using namespace std;
 // 定义迷宫结构
 typedef struct {
@@ -23,13 +25,23 @@ typedef struct {
     int path[MAX_SIZE][MAX_SIZE];
 }Path;
 
+
+
+// 定义宝藏类型
+typedef struct {
+    int x;
+    int y;
+    bool collected;  // 是否已被玩家收集
+} Treasure;
+
 Maze maze;
 Path path;
+Treasure treasures[TREASURE_COUNT];
 static TCHAR szWindowClass[] = _T("win32app");
 static TCHAR szTitle[] = _T("Matrix application");
 
-
-
+int score = 0; // 玩家分数
+int directionPriority = 0;
 
 const int DX[] = { 0, 0, 1, -1 };
 const int DY[] = { 1, -1, 0, 0 };
@@ -94,8 +106,175 @@ void generateRandomMaze(Maze* maze) {
     return;
 }
 
+// 随机生成宝藏
+void generateTreasures(Maze* maze) {
+    srand((unsigned int)time(NULL)); // 设置随机种子
+    for (int i = 0; i < TREASURE_COUNT; i++) {
+        int tx, ty;
+        do {
+            tx = rand() % maze->height;
+            ty = rand() % maze->width;
+        } while (maze->maze[tx][ty] == 1 || (tx == maze->entranceX && ty == maze->entranceY)); // 避免放置在墙壁或入口
+        treasures[i] = { tx, ty, false }; // 初始化宝藏
+    }
+}
+
+// 绘制宝藏
+void drawTreasures(HDC hdc) {
+    HBRUSH hBrush;
+    for (int i = 0; i < TREASURE_COUNT; i++) {
+        if (!treasures[i].collected) {
+            RECT rect = { treasures[i].y * 30, treasures[i].x * 30, (treasures[i].y + 1) * 30, (treasures[i].x + 1) * 30 };
+            hBrush = CreateSolidBrush(RGB(255, 215, 0)); // 金色表示宝藏
+            FillRect(hdc, &rect, hBrush);
+            DeleteObject(hBrush);
+        }
+    }
+}
 
 
+// 更新玩家分数
+void updateScore(int x, int y) {
+    for (int i = 0; i < TREASURE_COUNT; i++) {
+        if (treasures[i].x == x && treasures[i].y == y && !treasures[i].collected) {
+            treasures[i].collected = true; // 收集宝藏
+            score++;  // 得分增加
+            break;
+        }
+    }
+}
+
+// 绘制计分板
+void drawScore(HDC hdc) {
+    TCHAR scoreText[50];
+    wsprintf(scoreText, _T("Score: %d"), score);
+    TextOut(hdc, 10, 10, scoreText, lstrlen(scoreText));
+}
+
+
+bool changedirection(int& x, int& y,HDC hdc,stack<int>&rec,int dir)
+{
+    switch (dir)
+    {
+    case(3):
+    {
+        if (maze.maze[x + 1][y] == 0 && rec.top() != 3)
+        {
+            x = x + 1;
+            rec.push(1);
+            return true;
+        }
+        else if (maze.maze[x - 1][y] == 0 && rec.top() != 1)
+        {
+            x = x - 1;
+            rec.push(3);
+            return true;
+        }
+        else if (maze.maze[x][y + 1] == 0 && rec.top() != 4)
+        {
+            y = y + 1;
+            rec.push(2);
+            return true;
+        }
+        else if (maze.maze[x][y - 1] == 0 && rec.top() != 2)
+        {
+            y = y - 1;
+            rec.push(4);
+            return true;
+        }
+        else
+            return false;
+    }
+    case(0):
+    {
+        if (maze.maze[x - 1][y] == 0 && rec.top() != 1)
+        {
+            x = x - 1;
+            rec.push(3);
+            return true;
+        }
+        else if (maze.maze[x + 1][y] == 0 && rec.top() != 3)
+        {
+            x = x + 1;
+            rec.push(1);
+            return true;
+        }
+        else if (maze.maze[x][y + 1] == 0 && rec.top() != 4)
+        {
+            y = y + 1;
+            rec.push(2);
+            return true;
+        }
+        else if (maze.maze[x][y - 1] == 0 && rec.top() != 2)
+        {
+            y = y - 1;
+            rec.push(4);
+            return true;
+        }
+        else
+            return false;
+    }
+    case(1):
+    {
+        if (maze.maze[x][y - 1] == 0 && rec.top() != 2)
+        {
+            y = y - 1;
+            rec.push(4);
+            return true;
+        }
+        else if (maze.maze[x - 1][y] == 0 && rec.top() != 1)
+        {
+            x = x - 1;
+            rec.push(3);
+            return true;
+        }
+        else if (maze.maze[x + 1][y] == 0 && rec.top() != 3)
+        {
+            x = x + 1;
+            rec.push(1);
+            return true;
+        }
+        else if (maze.maze[x][y + 1] == 0 && rec.top() != 4)
+        {
+            y = y + 1;
+            rec.push(2);
+            return true;
+        }
+        else
+            return false;
+    }
+    case(2):
+    {
+        if (maze.maze[x][y + 1] == 0 && rec.top() != 4)
+        {
+            y = y + 1;
+            rec.push(2);
+            return true;
+        }
+        else if (maze.maze[x][y - 1] == 0 && rec.top() != 2)
+        {
+            y = y - 1;
+            rec.push(4);
+            return true;
+        }
+        else if (maze.maze[x - 1][y] == 0 && rec.top() != 1)
+        {
+            x = x - 1;
+            rec.push(3);
+            return true;
+        }
+        else if (maze.maze[x + 1][y] == 0 && rec.top() != 3)
+        {
+            x = x + 1;
+            rec.push(1);
+            return true;
+        }
+        else
+            return false;
+    }
+    }
+    
+}
 
 
 //寻找通路
@@ -206,7 +385,109 @@ void findpath(HWND hwnd, Maze maze, Path& path)
     }
 }
 
+void drawpath(HDC hdc)
+{
+    stack<pair<int, int>> Stack;
+    stack<int> rec;
+    HBRUSH hBrush;
+    int x = (maze.entranceX + 1), y = (maze.entranceY + 1);
+    Stack.push({ x,y });
+    RECT rect = { y * 30, x * 30, (y + 1) * 30, (x + 1) * 30 };
 
+    hBrush = CreateSolidBrush(RGB(255, 255, 0));  // 黄色表示路径
+    FillRect(hdc, &rect, hBrush);
+    Sleep(500);
+    DeleteObject(hBrush);
+    rec.push(0);
+    while ((x + 1) != maze.exitX || (y + 1) != maze.exitY)
+    {
+
+
+
+        updateScore(x, y);
+        drawScore(hdc);
+        
+
+        /*if (maze.maze[x + 1][y] == 0 && rec.top() != 3)
+        {
+            x = x + 1;
+            rec.push(1);
+        }
+        else if (maze.maze[x][y + 1] == 0 && rec.top() != 4)
+        {
+            y = y + 1;
+            rec.push(2);
+        }
+        else if (maze.maze[x - 1][y] == 0 && rec.top() != 1)
+        {
+            x = x - 1;
+            rec.push(3);
+        }
+        else if (maze.maze[x][y - 1] == 0 && rec.top() != 2)
+        {
+            y = y - 1;
+            rec.push(4);
+        }
+        */
+        if (!changedirection(x, y, hdc, rec, directionPriority))
+        {
+            while (true)
+            {
+                auto p = Stack.top();
+                Stack.pop();
+
+                int xt = p.first, yt = p.second;
+                hBrush = CreateSolidBrush(RGB(255, 255, 255));
+                RECT rect = { yt * 30, xt * 30, (yt + 1) * 30, (xt + 1) * 30 };
+                FillRect(hdc, &rect, hBrush);
+                DeleteObject(hBrush);
+                Sleep(500);
+                p = Stack.top();
+                xt = p.first, yt = p.second;
+                auto re = rec.top();
+                maze.maze[xt][yt] = 1;
+                rec.pop();
+                if (maze.maze[xt + 1][yt] == 0 && re != 1 && rec.top() != 3)
+                {
+                    x = xt + 1;
+                    y = yt;
+                    rec.push(1);
+                    break;
+                }
+                else if (maze.maze[xt][yt + 1] == 0 && re != 2 && rec.top() != 4)
+                {
+                    x = xt;
+                    y = yt + 1;
+                    rec.push(2);
+                    break;
+                }
+                else if (maze.maze[xt - 1][yt] == 0 && re != 3 && rec.top() != 1)
+                {
+                    x = xt - 1;
+                    y = yt;
+                    rec.push(3);
+                    break;
+                }
+                else if (maze.maze[xt][yt - 1] == 0 && re != 4 && rec.top() != 2)
+                {
+                    x = xt;
+                    y = yt - 1;
+                    rec.push(4);
+                    break;
+                }
+
+            }
+        }
+        
+        Stack.push({ x, y });
+        RECT rect = { y * 30, x * 30, (y + 1) * 30, (x + 1) * 30 };
+
+        hBrush = CreateSolidBrush(RGB(255, 255, 0));  // 黄色表示路径
+        FillRect(hdc, &rect, hBrush);
+        Sleep(500);
+        DeleteObject(hBrush);
+    }
+}
 void initPath(Path& path)
 {
     for (int i = 0; i < maze.height; i++)
@@ -289,14 +570,30 @@ LRESULT CALLBACK winproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         generateRandomMaze(&maze);
         maze.maze[1][1] = 0;
         maze.maze[maze.height - 2][maze.width - 2] = 0;
+        generateTreasures(&maze);
         break;
 
+    case WM_KEYDOWN:
+    {
+        if (wParam == VK_UP)
+            directionPriority = 0;
+        if (wParam == VK_LEFT)
+            directionPriority = 1;
+        if (wParam == VK_RIGHT)
+            directionPriority = 2;
+        if (wParam == VK_DOWN)
+            directionPriority = 3;
+
+            ;
+    }
     case WM_PAINT:  
     {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hwnd, &ps);
         initPath(path);
+        
        
+
         // 设置绘图颜色
         HBRUSH hBrush;
         for (int y = 0; y < maze.height; y++) {
@@ -327,7 +624,7 @@ LRESULT CALLBACK winproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                     FillRect(hdc, &rect, hBrush);
                 }
                 
-
+                drawTreasures(hdc);  // 新增的绘制宝藏方法
 
 
                 DeleteObject(hBrush);
@@ -335,113 +632,108 @@ LRESULT CALLBACK winproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             }
            
         }
+        
         Sleep(1000);
-        stack<pair<int, int>> Stack;   
-        stack<int> rec;
+        drawpath(hdc);
+        //stack<pair<int, int>> Stack;   
+        //stack<int> rec;
        
-        int x = (maze.entranceX + 1), y = (maze.entranceY + 1);
-        Stack.push({ x,y });
-        RECT rect = { y * 30, x * 30, (y + 1) * 30, (x + 1) * 30 };
+        //int x = (maze.entranceX + 1), y = (maze.entranceY + 1);
+        //Stack.push({ x,y });
+        //RECT rect = { y * 30, x * 30, (y + 1) * 30, (x + 1) * 30 };
 
-        hBrush = CreateSolidBrush(RGB(255, 255, 0));  // 黄色表示路径
-        FillRect(hdc, &rect, hBrush);
-        Sleep(200);
-        DeleteObject(hBrush);
-        rec.push(0);
-        while ((x + 1) != maze.exitX || (y + 1) != maze.exitY)
-        {
+        //hBrush = CreateSolidBrush(RGB(255, 255, 0));  // 黄色表示路径
+        //FillRect(hdc, &rect, hBrush);
+        //Sleep(200);
+        //DeleteObject(hBrush);
+        //rec.push(0);
+        //while ((x + 1) != maze.exitX || (y + 1) != maze.exitY)
+        //{
 
-            if (maze.maze[x + 1][y] == 0 && rec.top() != 3)
-            {
-                x = x + 1;
-                rec.push(1);
-            }
-            else if (maze.maze[x][y + 1] == 0 && rec.top() != 4)
-            {
-                y = y + 1;
-                rec.push(2);
-            }
-            else if (maze.maze[x - 1][y] == 0 && rec.top() != 1)
-            {
-                x = x - 1;
-                rec.push(3);
-            }
-            else if (maze.maze[x][y - 1] == 0 && rec.top() != 2)
-            {
-                y = y - 1;
-                rec.push(4);
-            }
-            else
-            {
+        //    
 
-                while (true)
-                {
-                    auto p = Stack.top();
-                    Stack.pop();
-                    
-                    int xt = p.first, yt = p.second;
-                    hBrush = CreateSolidBrush(RGB(255, 255, 255));
-                    RECT rect = { yt * 30, xt * 30, (yt + 1) * 30, (xt + 1) * 30 };
-                    FillRect(hdc, &rect, hBrush);
-                    DeleteObject(hBrush);
-                    Sleep(200);
-                    p = Stack.top();
-                    xt = p.first, yt = p.second;
-                    auto re = rec.top();
-                    maze.maze[xt][yt] = 1;
-                    rec.pop();
-                    if (maze.maze[xt + 1][yt] == 0 && re != 1 && rec.top() != 3)
-                    {
-                        x = xt + 1;
-                        y = yt;
-                        rec.push(1);
-                        break;
-                    }
-                    else if (maze.maze[xt][yt + 1] == 0 && re != 2 && rec.top() != 4)
-                    {
-                        x = xt;
-                        y = yt + 1;
-                        rec.push(2);
-                        break;
-                    }
-                    else if (maze.maze[xt - 1][yt] == 0 && re != 3 && rec.top() != 1)
-                    {
-                        x = xt - 1;
-                        y = yt;
-                        rec.push(3);
-                        break;
-                    }
-                    else if (maze.maze[xt][yt - 1] == 0 && re != 4 && rec.top() != 2)
-                    {
-                        x = xt;
-                        y = yt - 1;
-                        rec.push(4);
-                        break;
-                    }
+        //    updateScore(x, y);
+        //    drawScore(hdc);
+        //    if (maze.maze[x + 1][y] == 0 && rec.top() != 3)
+        //    {
+        //        x = x + 1;
+        //        rec.push(1);
+        //    }
+        //    else if (maze.maze[x][y + 1] == 0 && rec.top() != 4)
+        //    {
+        //        y = y + 1;
+        //        rec.push(2);
+        //    }
+        //    else if (maze.maze[x - 1][y] == 0 && rec.top() != 1)
+        //    {
+        //        x = x - 1;
+        //        rec.push(3);
+        //    }
+        //    else if (maze.maze[x][y - 1] == 0 && rec.top() != 2)
+        //    {
+        //        y = y - 1;
+        //        rec.push(4);
+        //    }
+        //    else
+        //    {
 
-                }
-            }
-            Stack.push({ x, y });
-            RECT rect = { y * 30, x * 30, (y + 1) * 30, (x + 1) * 30 };
+        //        while (true)
+        //        {
+        //            auto p = Stack.top();
+        //            Stack.pop();
+        //            
+        //            int xt = p.first, yt = p.second;
+        //            hBrush = CreateSolidBrush(RGB(255, 255, 255));
+        //            RECT rect = { yt * 30, xt * 30, (yt + 1) * 30, (xt + 1) * 30 };
+        //            FillRect(hdc, &rect, hBrush);
+        //            DeleteObject(hBrush);
+        //            Sleep(200);
+        //            p = Stack.top();
+        //            xt = p.first, yt = p.second;
+        //            auto re = rec.top();
+        //            maze.maze[xt][yt] = 1;
+        //            rec.pop();
+        //            if (maze.maze[xt + 1][yt] == 0 && re != 1 && rec.top() != 3)
+        //            {
+        //                x = xt + 1;
+        //                y = yt;
+        //                rec.push(1);
+        //                break;
+        //            }
+        //            else if (maze.maze[xt][yt + 1] == 0 && re != 2 && rec.top() != 4)
+        //            {
+        //                x = xt;
+        //                y = yt + 1;
+        //                rec.push(2);
+        //                break;
+        //            }
+        //            else if (maze.maze[xt - 1][yt] == 0 && re != 3 && rec.top() != 1)
+        //            {
+        //                x = xt - 1;
+        //                y = yt;
+        //                rec.push(3);
+        //                break;
+        //            }
+        //            else if (maze.maze[xt][yt - 1] == 0 && re != 4 && rec.top() != 2)
+        //            {
+        //                x = xt;
+        //                y = yt - 1;
+        //                rec.push(4);
+        //                break;
+        //            }
 
-            hBrush = CreateSolidBrush(RGB(255, 255, 0));  // 黄色表示路径
-            FillRect(hdc, &rect, hBrush);
-            Sleep(200);
-            DeleteObject(hBrush);
-        }
+        //        }
+        //    }
+        //    Stack.push({ x, y });
+        //    RECT rect = { y * 30, x * 30, (y + 1) * 30, (x + 1) * 30 };
 
-        /*if ((x + 1) == maze.exitX && y + 1 == maze.exitY)
-        {
-            while (!Stack.empty())
-            {
-                auto tmp = Stack.top();
-                path.path[tmp.first][tmp.second] = 1;
+        //    hBrush = CreateSolidBrush(RGB(255, 255, 0));  // 黄色表示路径
+        //    FillRect(hdc, &rect, hBrush);
+        //    Sleep(200);
+        //    DeleteObject(hBrush);
+        //}
 
-                Stack.pop();
-
-            }
-           
-        }*/
+        
         
         
         
