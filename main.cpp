@@ -1,24 +1,23 @@
 #include<windows.h>
-#include<stdlib.h>
 #include<string.h>
 #include<tchar.h>
 #include<stdio.h>
 #include<stack>
-#include <stdlib.h> // ÓÃÓÚ srand, rand
+#include <stdlib.h> // ç”¨äº srand, rand
 #include <time.h>   
-#define MAX_SIZE 100  // ×î´óÃÔ¹¬³ß´ç
-// ¶¨Òå±¦²ØµÄÊıÁ¿
-#define TREASURE_COUNT 5  // ¿ÉÒÔĞŞ¸Ä³ÉÏ£ÍûµÄ±¦²ØÊıÄ¿
+#define MAX_SIZE 100  // æœ€å¤§è¿·å®«å°ºå¯¸
+// å®šä¹‰å®è—çš„æ•°é‡
+#define TREASURE_COUNT 5  // å¯ä»¥ä¿®æ”¹æˆå¸Œæœ›çš„å®è—æ•°ç›®
 using namespace std;
-// ¶¨ÒåÃÔ¹¬½á¹¹
+// å®šä¹‰è¿·å®«ç»“æ„
 typedef struct {
-    int width;         // ÃÔ¹¬¿í¶È
-    int height;        // ÃÔ¹¬¸ß¶È
-    int entranceX;     // Èë¿ÚX×ø±ê
-    int entranceY;     // Èë¿ÚY×ø±ê
-    int exitX;         // ³ö¿ÚX×ø±ê
-    int exitY;         // ³ö¿ÚY×ø±ê
-    int maze[MAX_SIZE][MAX_SIZE];  // ÃÔ¹¬Êı¾İ
+    int width;         // è¿·å®«å®½åº¦
+    int height;        // è¿·å®«é«˜åº¦
+    int entranceX;     // å…¥å£Xåæ ‡
+    int entranceY;     // å…¥å£Yåæ ‡
+    int exitX;         // å‡ºå£Xåæ ‡
+    int exitY;         // å‡ºå£Yåæ ‡
+    int maze[MAX_SIZE][MAX_SIZE];  // è¿·å®«æ•°æ®
 } Maze;
 
 typedef struct {
@@ -27,11 +26,11 @@ typedef struct {
 
 
 
-// ¶¨Òå±¦²ØÀàĞÍ
+// å®šä¹‰å®è—ç±»å‹
 typedef struct {
     int x;
     int y;
-    bool collected;  // ÊÇ·ñÒÑ±»Íæ¼ÒÊÕ¼¯
+    bool collected;  // æ˜¯å¦å·²è¢«ç©å®¶æ”¶é›†
 } Treasure;
 
 Maze maze;
@@ -40,15 +39,15 @@ Treasure treasures[TREASURE_COUNT];
 static TCHAR szWindowClass[] = _T("win32app");
 static TCHAR szTitle[] = _T("Matrix application");
 
-int score = 0; // Íæ¼Ò·ÖÊı
+int score = 0; // ç©å®¶åˆ†æ•°
 int directionPriority = 0;
 
 const int DX[] = { 0, 0, 1, -1 };
 const int DY[] = { 1, -1, 0, 0 };
 
-// ¼ì²éÊÇ·ñ¿ÉÒÔÔÚ (nx, ny) ÍÚÍ¨Â·
+// æ£€æŸ¥æ˜¯å¦å¯ä»¥åœ¨ (nx, ny) æŒ–é€šè·¯
 bool isValid(int nx, int ny, Maze* maze) {
-    if (nx <= 0 || nx >= maze->height - 1 || ny <= 0 || ny >= maze->width - 1) return false; // ±ß½çÍâ
+    if (nx <= 0 || nx >= maze->height - 1 || ny <= 0 || ny >= maze->width - 1) return false; // è¾¹ç•Œå¤–
     int count = 0;
     for (int d = 0; d < 4; d++) {
         int tx = nx + DX[d], ty = ny + DY[d];
@@ -56,12 +55,12 @@ bool isValid(int nx, int ny, Maze* maze) {
             count++;
         }
     }
-    return count <= 1; // ±£Ö¤ÍÚ³öµÄÂ·²»»áÁ¬½Ó¹ı¶àµÄÒÑÍÚÂ·¾¶
+    return count <= 1; // ä¿è¯æŒ–å‡ºçš„è·¯ä¸ä¼šè¿æ¥è¿‡å¤šçš„å·²æŒ–è·¯å¾„
 }
 
-// Éî¶ÈÓÅÏÈËÑË÷Éú³ÉÃÔ¹¬
+// æ·±åº¦ä¼˜å…ˆæœç´¢ç”Ÿæˆè¿·å®«
 void generateMazeDFS(int x, int y, Maze* maze) {
-    // Ëæ»ú´òÂÒ·½Ïò
+    // éšæœºæ‰“ä¹±æ–¹å‘
     int order[] = { 0, 1, 2, 3 };
     for (int i = 0; i < 4; i++) {
         int j = rand() % 4;
@@ -70,29 +69,29 @@ void generateMazeDFS(int x, int y, Maze* maze) {
         order[j] = temp;
     }
 
-    // °´Ëæ»ú·½Ïò³¢ÊÔÍÚÍ¨Â·
+    // æŒ‰éšæœºæ–¹å‘å°è¯•æŒ–é€šè·¯
     for (int i = 0; i < 4; i++) {
         int nx = x + DX[order[i]];
         int ny = y + DY[order[i]];
         if (isValid(nx, ny, maze)) {
-            maze->maze[nx][ny] = 0; // ÍÚÍ¨Â·
-            generateMazeDFS(nx, ny, maze); // µİ¹éÉú³É
+            maze->maze[nx][ny] = 0; // æŒ–é€šè·¯
+            generateMazeDFS(nx, ny, maze); // é€’å½’ç”Ÿæˆ
         }
     }
 }
 
-// ³õÊ¼»¯ÃÔ¹¬²¢Ëæ»úÉú³ÉÍ¨Â·
+// åˆå§‹åŒ–è¿·å®«å¹¶éšæœºç”Ÿæˆé€šè·¯
 void generateRandomMaze(Maze* maze) {
-    srand((unsigned int)time(NULL)); // ÉèÖÃËæ»úÖÖ×Ó
+    srand((unsigned int)time(NULL)); // è®¾ç½®éšæœºç§å­
 
-    // ³õÊ¼»¯ÃÔ¹¬ÎªÈ«Ç½±Ú
+    // åˆå§‹åŒ–è¿·å®«ä¸ºå…¨å¢™å£
     for (int i = 0; i < maze->height; i++) {
         for (int j = 0; j < maze->width; j++) {
-            maze->maze[i][j] = 1; // ÉèÖÃÎªÇ½±Ú
+            maze->maze[i][j] = 1; // è®¾ç½®ä¸ºå¢™å£
         }
     }
 
-    // ÉèÖÃÈë¿ÚºÍ³ö¿Ú
+    // è®¾ç½®å…¥å£å’Œå‡ºå£
     maze->entranceX = 0;
     maze->entranceY = 0;
     maze->exitX = maze->height - 1;
@@ -101,31 +100,31 @@ void generateRandomMaze(Maze* maze) {
     
     
 
-    // ´ÓÈë¿Ú¿ªÊ¼Ëæ»úÉú³ÉÃÔ¹¬
+    // ä»å…¥å£å¼€å§‹éšæœºç”Ÿæˆè¿·å®«
     generateMazeDFS(maze->entranceX+1, maze->entranceY+1, maze);
     return;
 }
 
-// Ëæ»úÉú³É±¦²Ø
+// éšæœºç”Ÿæˆå®è—
 void generateTreasures(Maze* maze) {
-    srand((unsigned int)time(NULL)); // ÉèÖÃËæ»úÖÖ×Ó
+    srand((unsigned int)time(NULL)); // è®¾ç½®éšæœºç§å­
     for (int i = 0; i < TREASURE_COUNT; i++) {
         int tx, ty;
         do {
             tx = rand() % maze->height;
             ty = rand() % maze->width;
-        } while (maze->maze[tx][ty] == 1 || (tx == maze->entranceX && ty == maze->entranceY)); // ±ÜÃâ·ÅÖÃÔÚÇ½±Ú»òÈë¿Ú
-        treasures[i] = { tx, ty, false }; // ³õÊ¼»¯±¦²Ø
+        } while (maze->maze[tx][ty] == 1 || (tx == maze->entranceX && ty == maze->entranceY)); // é¿å…æ”¾ç½®åœ¨å¢™å£æˆ–å…¥å£
+        treasures[i] = { tx, ty, false }; // åˆå§‹åŒ–å®è—
     }
 }
 
-// »æÖÆ±¦²Ø
+// ç»˜åˆ¶å®è—
 void drawTreasures(HDC hdc) {
     HBRUSH hBrush;
     for (int i = 0; i < TREASURE_COUNT; i++) {
         if (!treasures[i].collected) {
             RECT rect = { treasures[i].y * 30, treasures[i].x * 30, (treasures[i].y + 1) * 30, (treasures[i].x + 1) * 30 };
-            hBrush = CreateSolidBrush(RGB(255, 215, 0)); // ½ğÉ«±íÊ¾±¦²Ø
+            hBrush = CreateSolidBrush(RGB(255, 215, 0)); // é‡‘è‰²è¡¨ç¤ºå®è—
             FillRect(hdc, &rect, hBrush);
             DeleteObject(hBrush);
         }
@@ -133,18 +132,18 @@ void drawTreasures(HDC hdc) {
 }
 
 
-// ¸üĞÂÍæ¼Ò·ÖÊı
+// æ›´æ–°ç©å®¶åˆ†æ•°
 void updateScore(int x, int y) {
     for (int i = 0; i < TREASURE_COUNT; i++) {
         if (treasures[i].x == x && treasures[i].y == y && !treasures[i].collected) {
-            treasures[i].collected = true; // ÊÕ¼¯±¦²Ø
-            score++;  // µÃ·ÖÔö¼Ó
+            treasures[i].collected = true; // æ”¶é›†å®è—
+            score++;  // å¾—åˆ†å¢åŠ 
             break;
         }
     }
 }
 
-// »æÖÆ¼Æ·Ö°å
+// ç»˜åˆ¶è®¡åˆ†æ¿
 void drawScore(HDC hdc) {
     TCHAR scoreText[50];
     wsprintf(scoreText, _T("Score: %d"), score);
@@ -277,7 +276,7 @@ bool changedirection(int& x, int& y,HDC hdc,stack<int>&rec,int dir)
 }
 
 
-//Ñ°ÕÒÍ¨Â·
+//å¯»æ‰¾é€šè·¯
 void findpath(HWND hwnd, Maze maze, Path& path)
 {
 
@@ -365,7 +364,7 @@ void findpath(HWND hwnd, Maze maze, Path& path)
         Stack.push({ x, y });
         RECT rect = { x * 30, y * 30, (x + 1) * 30, (y + 1) * 30 };
         
-            hBrush = CreateSolidBrush(RGB(255, 255, 0));  // »ÆÉ«±íÊ¾Â·¾¶
+            hBrush = CreateSolidBrush(RGB(255, 255, 0));  // é»„è‰²è¡¨ç¤ºè·¯å¾„
             FillRect(hdc, &rect, hBrush);
             Sleep(1000);
             DeleteObject(hBrush);
@@ -394,7 +393,7 @@ void drawpath(HDC hdc)
     Stack.push({ x,y });
     RECT rect = { y * 30, x * 30, (y + 1) * 30, (x + 1) * 30 };
 
-    hBrush = CreateSolidBrush(RGB(255, 255, 0));  // »ÆÉ«±íÊ¾Â·¾¶
+    hBrush = CreateSolidBrush(RGB(255, 255, 0));  // é»„è‰²è¡¨ç¤ºè·¯å¾„
     FillRect(hdc, &rect, hBrush);
     Sleep(500);
     DeleteObject(hBrush);
@@ -482,7 +481,7 @@ void drawpath(HDC hdc)
         Stack.push({ x, y });
         RECT rect = { y * 30, x * 30, (y + 1) * 30, (x + 1) * 30 };
 
-        hBrush = CreateSolidBrush(RGB(255, 255, 0));  // »ÆÉ«±íÊ¾Â·¾¶
+        hBrush = CreateSolidBrush(RGB(255, 255, 0));  // é»„è‰²è¡¨ç¤ºè·¯å¾„
         FillRect(hdc, &rect, hBrush);
         Sleep(500);
         DeleteObject(hBrush);
@@ -500,21 +499,21 @@ void initPath(Path& path)
     return;
 }
 
-// ´ÓÎÄ¼ş¶ÁÈ¡ÃÔ¹¬Êı¾İ
+// ä»æ–‡ä»¶è¯»å–è¿·å®«æ•°æ®
 bool loadMazeFromFile(const char* fileName, Maze* maze) {
     FILE* file = NULL;
     errno_t err = fopen_s(&file, fileName, "r");
     if (err != 0 || file == NULL) {
-        MessageBox(NULL, _T("ÎŞ·¨¶ÁÈ¡ÃÔ¹¬ÎÄ¼ş"), _T("´íÎó"), MB_ICONEXCLAMATION | MB_OK);
+        MessageBox(NULL, _T("æ— æ³•è¯»å–è¿·å®«æ–‡ä»¶"), _T("é”™è¯¯"), MB_ICONEXCLAMATION | MB_OK);
         return false;
     }
 
-    // ¶ÁÈ¡ÃÔ¹¬µÄ³ß´çºÍÈë¿Ú³ö¿Ú
+    // è¯»å–è¿·å®«çš„å°ºå¯¸å’Œå…¥å£å‡ºå£
     fscanf_s(file, "%d %d", &maze->width, &maze->height);
     fscanf_s(file, "%d %d", &maze->entranceX, &maze->entranceY);
     fscanf_s(file, "%d %d", &maze->exitX, &maze->exitY);
 
-    // ¶ÁÈ¡ÃÔ¹¬µØÍ¼Êı¾İ
+    // è¯»å–è¿·å®«åœ°å›¾æ•°æ®
     for (int y = 0; y < maze->height; y++) {
         for (int x = 0; x < maze->width; x++) {
             fscanf_s(file, "%d", &maze->maze[y][x]);
@@ -525,7 +524,7 @@ bool loadMazeFromFile(const char* fileName, Maze* maze) {
     return true;
 }
 
-// ±£´æÃÔ¹¬Êı¾İµ½ÎÄ¼ş
+// ä¿å­˜è¿·å®«æ•°æ®åˆ°æ–‡ä»¶
 void saveMazeToFile(const char* fileName, Maze* maze) {
     FILE* file = NULL;
     errno_t err = fopen_s(&file, fileName, "w");
@@ -534,7 +533,7 @@ void saveMazeToFile(const char* fileName, Maze* maze) {
         fprintf(file, "%d %d\n", maze->entranceX, maze->entranceY);
         fprintf(file, "%d %d\n", maze->exitX, maze->exitY);
 
-        // ±£´æÃÔ¹¬µØÍ¼Êı¾İ
+        // ä¿å­˜è¿·å®«åœ°å›¾æ•°æ®
         for (int y = 0; y < maze->height; y++) {
             for (int x = 0; x < maze->width; x++) {
                 fprintf(file, "%d ", maze->maze[y][x]);
@@ -545,11 +544,11 @@ void saveMazeToFile(const char* fileName, Maze* maze) {
     }
 }
 
-// ´°¿Ú¹ı³Ìº¯Êı
+// çª—å£è¿‡ç¨‹å‡½æ•°
 LRESULT CALLBACK winproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
     case WM_CREATE:
-        /* ¼ÓÔØÃÔ¹¬Êı¾İ£¬Èç¹ûÎÄ¼ş²»´æÔÚÔò´´½¨Ä¬ÈÏÃÔ¹¬*/
+        /* åŠ è½½è¿·å®«æ•°æ®ï¼Œå¦‚æœæ–‡ä»¶ä¸å­˜åœ¨åˆ™åˆ›å»ºé»˜è®¤è¿·å®«*/
         //if (!loadMazeFromFile("maze.txt", &maze)) {
         //    maze.width = 10;
         //    maze.height = 10;
@@ -558,7 +557,7 @@ LRESULT CALLBACK winproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         //    maze.exitX = 9;
         //    maze.exitY = 9;
 
-        //    // Ä¬ÈÏÃÔ¹¬£¨0ÎªÂ·¾¶£¬1ÎªÇ½±Ú£©
+        //    // é»˜è®¤è¿·å®«ï¼ˆ0ä¸ºè·¯å¾„ï¼Œ1ä¸ºå¢™å£ï¼‰
         //    for (int i = 0; i < maze.height; i++) {
         //        for (int j = 0; j < maze.width; j++) {
         //            maze.maze[i][j] = (i == 0 || i == maze.height - 1 || j == 0 || j == maze.width - 1) ? 1 : 0;
@@ -594,37 +593,37 @@ LRESULT CALLBACK winproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         
        
 
-        // ÉèÖÃ»æÍ¼ÑÕÉ«
+        // è®¾ç½®ç»˜å›¾é¢œè‰²
         HBRUSH hBrush;
         for (int y = 0; y < maze.height; y++) {
             for (int x = 0; x < maze.width; x++) {
                 if (maze.maze[y][x] == 1) {
-                    // Ç½±Ú
-                    hBrush = CreateSolidBrush(RGB(0, 0, 0));  // ºÚÉ«
+                    // å¢™å£
+                    hBrush = CreateSolidBrush(RGB(0, 0, 0));  // é»‘è‰²
                 }
                 else {
-                    // Í¨Â·
-                    hBrush = CreateSolidBrush(RGB(255, 255, 255));  // °×É«
+                    // é€šè·¯
+                    hBrush = CreateSolidBrush(RGB(255, 255, 255));  // ç™½è‰²
                 }
 
-                // »æÖÆÃ¿¸ö¸ñ×Ó
+                // ç»˜åˆ¶æ¯ä¸ªæ ¼å­
                 RECT rect = { x * 30, y * 30, (x + 1) * 30, (y + 1) * 30 };
                 FillRect(hdc, &rect, hBrush);
 
                 
-                 /*»æÖÆÈë¿Ú*/
+                 /*ç»˜åˆ¶å…¥å£*/
                 if (x-1 == maze.entranceX && y == maze.entranceY) {
-                    hBrush = CreateSolidBrush(RGB(0, 255, 0));  // ÂÌÉ«±íÊ¾Èë¿Ú
+                    hBrush = CreateSolidBrush(RGB(0, 255, 0));  // ç»¿è‰²è¡¨ç¤ºå…¥å£
                     FillRect(hdc, &rect, hBrush);
                 }  
 
-                // »æÖÆ³ö¿Ú
+                // ç»˜åˆ¶å‡ºå£
                 if ((x) == maze.exitX && y+1== maze.exitY) {
-                    hBrush = CreateSolidBrush(RGB(255, 0, 0));  // ºìÉ«±íÊ¾³ö¿Ú
+                    hBrush = CreateSolidBrush(RGB(255, 0, 0));  // çº¢è‰²è¡¨ç¤ºå‡ºå£
                     FillRect(hdc, &rect, hBrush);
                 }
                 
-                drawTreasures(hdc);  // ĞÂÔöµÄ»æÖÆ±¦²Ø·½·¨
+                drawTreasures(hdc);  // æ–°å¢çš„ç»˜åˆ¶å®è—æ–¹æ³•
 
 
                 DeleteObject(hBrush);
@@ -642,7 +641,7 @@ LRESULT CALLBACK winproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         //Stack.push({ x,y });
         //RECT rect = { y * 30, x * 30, (y + 1) * 30, (x + 1) * 30 };
 
-        //hBrush = CreateSolidBrush(RGB(255, 255, 0));  // »ÆÉ«±íÊ¾Â·¾¶
+        //hBrush = CreateSolidBrush(RGB(255, 255, 0));  // é»„è‰²è¡¨ç¤ºè·¯å¾„
         //FillRect(hdc, &rect, hBrush);
         //Sleep(200);
         //DeleteObject(hBrush);
@@ -727,7 +726,7 @@ LRESULT CALLBACK winproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         //    Stack.push({ x, y });
         //    RECT rect = { y * 30, x * 30, (y + 1) * 30, (x + 1) * 30 };
 
-        //    hBrush = CreateSolidBrush(RGB(255, 255, 0));  // »ÆÉ«±íÊ¾Â·¾¶
+        //    hBrush = CreateSolidBrush(RGB(255, 255, 0));  // é»„è‰²è¡¨ç¤ºè·¯å¾„
         //    FillRect(hdc, &rect, hBrush);
         //    Sleep(200);
         //    DeleteObject(hBrush);
@@ -743,7 +742,7 @@ LRESULT CALLBACK winproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     break;
 
     case WM_DESTROY:
-        saveMazeToFile("maze.txt", &maze);  // ±£´æÃÔ¹¬µ½ÎÄ¼ş
+        saveMazeToFile("maze.txt", &maze);  // ä¿å­˜è¿·å®«åˆ°æ–‡ä»¶
         PostQuitMessage(0);
         break;
 
@@ -754,7 +753,7 @@ LRESULT CALLBACK winproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     return 0;
 }
 
-// ³ÌĞòÈë¿Úº¯Êı
+// ç¨‹åºå…¥å£å‡½æ•°
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
     WNDCLASSEX wcex;
     ZeroMemory(&wcex, sizeof(WNDCLASSEX));
