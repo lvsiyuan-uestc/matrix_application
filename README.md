@@ -70,6 +70,11 @@ This project is a matrix application that generates random mazes and highlights 
 
 ---
 
+## Development Notes / 开发说明
+
+- The project uses the Win32 API and requires a Windows build environment.
+- A .gitignore file avoids committing Visual Studio build artifacts.
+
 ## License / 版权
 
 This project is licensed under the MIT License. See `LICENSE` for more information.
